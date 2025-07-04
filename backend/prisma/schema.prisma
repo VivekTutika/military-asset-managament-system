@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  COMMANDER
+  LOGISTICS
+}
+
+enum AssetStatus {
+  AVAILABLE
+  ASSIGNED
+  EXPENDED
+  TRANSFERRED
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  baseId    Int?
+  base      Base?    @relation(fields: [baseId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  logs      ApiLog[]
+}
+
+model Base {
+  id            Int        @id @default(autoincrement())
+  name          String
+  location      String
+  users         User[]
+  assets        Asset[]
+  purchases     Purchase[]
+  assignments   Assignment[]
+  expenditures  Expenditure[]
+  transfersFrom Transfer[] @relation("TransfersFrom")
+  transfersTo   Transfer[] @relation("TransfersTo")
+}
+
+model EquipmentType {
+  id       Int     @id @default(autoincrement())
+  name     String
+  category String
+  assets   Asset[]
+  purchases   Purchase[]
+  transfers   Transfer[]
+  assignments Assignment[]
+  expenditures Expenditure[]
+}
+
+model Asset {
+  id              Int           @id @default(autoincrement())
+  serialNumber    String        @unique
+  equipmentTypeId Int
+  baseId          Int
+  status          AssetStatus   @default(AVAILABLE)
+  equipmentType   EquipmentType @relation(fields: [equipmentTypeId], references: [id])
+  base            Base          @relation(fields: [baseId], references: [id])
+}
+
+model Purchase {
+  id              Int           @id @default(autoincrement())
+  baseId          Int
+  equipmentTypeId Int
+  quantity        Int           @default(1)
+  date            DateTime      @default(now())
+  base            Base          @relation(fields: [baseId], references: [id])
+  equipmentType   EquipmentType @relation(fields: [equipmentTypeId], references: [id])
+}
+
+model Transfer {
+  id              Int           @id @default(autoincrement())
+  fromBaseId      Int
+  toBaseId        Int
+  equipmentTypeId Int
+  quantity        Int           @default(1)
+  timestamp       DateTime      @default(now())
+  fromBase        Base          @relation("TransfersFrom", fields: [fromBaseId], references: [id])
+  toBase          Base          @relation("TransfersTo", fields: [toBaseId], references: [id])
+  equipmentType   EquipmentType @relation(fields: [equipmentTypeId], references: [id])
+}
+
+model Assignment {
+  id              Int           @id @default(autoincrement())
+  baseId          Int
+  equipmentTypeId Int
+  assignedTo      String
+  quantity        Int           @default(1)
+  assignedOn      DateTime      @default(now())
+  base            Base          @relation(fields: [baseId], references: [id])
+  equipmentType   EquipmentType @relation(fields: [equipmentTypeId], references: [id])
+}
+
+model Expenditure {
+  id              Int           @id @default(autoincrement())
+  baseId          Int
+  equipmentTypeId Int
+  quantity        Int           @default(1)
+  expendedOn      DateTime      @default(now())
+  reason          String
+  base            Base          @relation(fields: [baseId], references: [id])
+  equipmentType   EquipmentType @relation(fields: [equipmentTypeId], references: [id])
+}
+
+model ApiLog {
+  id        Int    @id @default(autoincrement())
+  userId    Int
+  action    String
+  details   String
+  timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
