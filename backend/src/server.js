@@ -17,7 +17,25 @@ dotenv.config()
 const app = express()
 const prisma = new PrismaClient()
 
-app.use(cors())
+// 🎯 CORS Configuration
+const allowedOrigins = [
+  'https://military-asset-managament-system-1.onrender.com', 
+  'http://localhost:5173' // Optional: for local dev
+]
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true)
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true)
+    } else {
+      return callback(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true
+}))
+
 app.use(express.json())
 app.use(morgan('dev'))
 
